@@ -12,6 +12,13 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   int selectedProfile = 0;
 
+  final _formKey = GlobalKey<FormState>();
+
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  bool _obscurePassword = true;
+
   final List<Map<String, String>> teamMembers = [
     {
       'name': 'Alex Carter',
@@ -31,6 +38,33 @@ class _SignInScreenState extends State<SignInScreen> {
   ];
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _continue() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final selectedMember = teamMembers[selectedProfile];
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.midnight,
+        content: Text(
+          'Welcome, ${selectedMember['name']}!',
+          style: const TextStyle(
+            color: AppColors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -41,7 +75,7 @@ class _SignInScreenState extends State<SignInScreen> {
             vertical: 28,
           ),
           children: [
-            // Brand header
+            // Sprintly branding
             Row(
               children: [
                 Container(
@@ -69,7 +103,7 @@ class _SignInScreenState extends State<SignInScreen> {
               ],
             ),
 
-            const SizedBox(height: 64),
+            const SizedBox(height: 56),
 
             // Welcome section
             const Text(
@@ -92,8 +126,9 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ),
 
-            const SizedBox(height: 48),
+            const SizedBox(height: 40),
 
+            // Profile selection heading
             const Text(
               'Choose your profile',
               style: TextStyle(
@@ -113,9 +148,9 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ),
 
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
 
-            // Selectable profile cards
+            // Selectable team member cards
             ...List.generate(teamMembers.length, (index) {
               final member = teamMembers[index];
               final isSelected = selectedProfile == index;
@@ -199,6 +234,130 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               );
             }),
+
+            const SizedBox(height: 28),
+
+            // Login form
+            Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Email address',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter your email',
+                      prefixIcon: Icon(Icons.mail_outline),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your email';
+                      }
+
+                      final emailPattern =
+                          RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+                      if (!emailPattern.hasMatch(value.trim())) {
+                        return 'Please enter a valid email address';
+                      }
+
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  const Text(
+                    'Password',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _continue(),
+                    decoration: InputDecoration(
+                      hintText: 'Enter your password',
+                      prefixIcon:
+                          const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your password';
+                      }
+
+                      if (value.length < 6) {
+                        return 'Password must contain at least 6 characters';
+                      }
+
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _continue,
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            const Center(
+              child: Text(
+                'Sprintly • Project & SLA Management',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
           ],
         ),
       ),
