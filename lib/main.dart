@@ -1,5 +1,7 @@
+
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
+import 'screens/auth/sign_in_screen.dart';
 
 void main() {
   runApp(const SprintlyApp());
@@ -14,17 +16,7 @@ class SprintlyApp extends StatelessWidget {
       title: 'Sprintly',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Welcome to Sprintly',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
+      home: const SignInScreen(),
     );
   }
 }
