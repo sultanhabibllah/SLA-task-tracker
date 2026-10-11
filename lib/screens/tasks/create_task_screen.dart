@@ -233,236 +233,244 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           child: Column(
             children: [
               Expanded(
-                child: ListView(
+                // A scrolling Column, not a ListView: a ListView only builds
+                // the fields near the screen, so the Form would skip
+                // validating the ones that are scrolled out of view.
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 20,
                   ),
-                  children: [
-                    const Text(
-                      'New task',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'New task',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 8),
+                      const SizedBox(height: 8),
 
-                    const Text(
-                      'Keep your team moving forward.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                      const Text(
+                        'Keep your team moving forward.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
-                    _sectionLabel('Task name *'),
+                      _sectionLabel('Task name *'),
 
-                    TextFormField(
-                      controller: _titleController,
-                      textCapitalization: TextCapitalization.sentences,
-                      maxLength: 80,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter task name',
+                      TextFormField(
+                        controller: _titleController,
+                        textCapitalization: TextCapitalization.sentences,
+                        maxLength: 80,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter task name',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Task name is required';
+                          }
+
+                          if (value.trim().length < 3) {
+                            return 'Enter at least 3 characters';
+                          }
+
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Task name is required';
-                        }
 
-                        if (value.trim().length < 3) {
-                          return 'Enter at least 3 characters';
-                        }
+                      const SizedBox(height: 16),
 
-                        return null;
-                      },
-                    ),
+                      _sectionLabel('Description'),
 
-                    const SizedBox(height: 16),
-
-                    _sectionLabel('Description'),
-
-                    TextFormField(
-                      controller: _descriptionController,
-                      maxLines: 4,
-                      maxLength: 500,
-                      decoration: const InputDecoration(
-                        hintText: 'Describe the task...',
+                      TextFormField(
+                        controller: _descriptionController,
+                        maxLines: 4,
+                        maxLength: 500,
+                        decoration: const InputDecoration(
+                          hintText: 'Describe the task...',
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    _sectionLabel('Assign to *'),
+                      _sectionLabel('Assign to *'),
 
-                    DropdownButtonFormField<String>(
-                      key: const ValueKey('task_assignee'),
-                      isExpanded: true,
-                      initialValue: _selectedAssigneeId,
-                      decoration: const InputDecoration(
-                        hintText: 'Select team member',
-                        prefixIcon: Icon(Icons.person_outline),
+                      DropdownButtonFormField<String>(
+                        key: const ValueKey('task_assignee'),
+                        isExpanded: true,
+                        initialValue: _selectedAssigneeId,
+                        decoration: const InputDecoration(
+                          hintText: 'Select team member',
+                          prefixIcon: Icon(Icons.person_outline),
+                        ),
+                        items: members.map((member) {
+                          return DropdownMenuItem<String>(
+                            value: member.id,
+                            child: Text(
+                              member.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedAssigneeId = value;
+                          });
+                        },
+                        validator: (value) {
+                          return value == null ? 'Select an assignee' : null;
+                        },
                       ),
-                      items: members.map((member) {
-                        return DropdownMenuItem<String>(
-                          value: member.id,
-                          child: Text(
-                            member.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedAssigneeId = value;
-                        });
-                      },
-                      validator: (value) {
-                        return value == null ? 'Select an assignee' : null;
-                      },
-                    ),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    _sectionLabel('Deadline *'),
+                      _sectionLabel('Deadline *'),
 
-                    FormField<DateTime>(
-                      validator: (_) =>
-                          _deadline == null ? 'Select a deadline' : null,
-                      builder: (field) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            InkWell(
-                              onTap: () async {
-                                await _selectDeadline();
-                                field.didChange(_deadline);
-                              },
-                              borderRadius: BorderRadius.circular(14),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(18),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: field.hasError
-                                        ? AppColors.overdue
-                                        : AppColors.border,
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.calendar_today_outlined,
-                                      size: 20,
-                                      color: AppColors.textSecondary,
+                      FormField<DateTime>(
+                        validator: (_) =>
+                            _deadline == null ? 'Select a deadline' : null,
+                        builder: (field) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              InkWell(
+                                onTap: () async {
+                                  await _selectDeadline();
+                                  field.didChange(_deadline);
+                                },
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: field.hasError
+                                          ? AppColors.overdue
+                                          : AppColors.border,
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        _deadline == null
-                                            ? 'Select due date'
-                                            : _formatDate(_deadline!),
-                                        style: TextStyle(
-                                          color: _deadline == null
-                                              ? AppColors.textSecondary
-                                              : AppColors.textPrimary,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.calendar_today_outlined,
+                                        size: 20,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _deadline == null
+                                              ? 'Select due date'
+                                              : _formatDate(_deadline!),
+                                          style: TextStyle(
+                                            color: _deadline == null
+                                                ? AppColors.textSecondary
+                                                : AppColors.textPrimary,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const Icon(Icons.keyboard_arrow_down),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            if (field.hasError)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 8,
-                                  left: 12,
-                                ),
-                                child: Text(
-                                  field.errorText!,
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.error,
-                                    fontSize: 12,
+                                      const Icon(Icons.keyboard_arrow_down),
+                                    ],
                                   ),
                                 ),
                               ),
-                          ],
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    _sectionLabel('Priority'),
-
-                    Row(
-                      children: [
-                        _priorityOption(TaskPriority.low, 'Low'),
-                        _priorityOption(TaskPriority.medium, 'Medium'),
-                        _priorityOption(TaskPriority.high, 'High'),
-                      ],
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    _sectionLabel('Task status'),
-
-                    DropdownButtonFormField<TaskStatus>(
-                      initialValue: _status,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.pending_actions_outlined),
+                              if (field.hasError)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 8,
+                                    left: 12,
+                                  ),
+                                  child: Text(
+                                    field.errorText!,
+                                    style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
                       ),
-                      items: TaskStatus.values.map((status) {
-                        return DropdownMenuItem<TaskStatus>(
-                          value: status,
-                          child: Text(status.label),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
+
+                      const SizedBox(height: 24),
+
+                      _sectionLabel('Priority'),
+
+                      Row(
+                        children: [
+                          _priorityOption(TaskPriority.low, 'Low'),
+                          _priorityOption(TaskPriority.medium, 'Medium'),
+                          _priorityOption(TaskPriority.high, 'High'),
+                        ],
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      _sectionLabel('Task status'),
+
+                      DropdownButtonFormField<TaskStatus>(
+                        initialValue: _status,
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.pending_actions_outlined),
+                        ),
+                        items: TaskStatus.values.map((status) {
+                          return DropdownMenuItem<TaskStatus>(
+                            value: status,
+                            child: Text(status.label),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _status = value;
+                            });
+                          }
+                        },
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      _sectionLabel('Project *'),
+
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedProject,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Select project',
+                          prefixIcon: Icon(Icons.folder_outlined),
+                        ),
+                        items: _projects.map((project) {
+                          return DropdownMenuItem<String>(
+                            value: project,
+                            child: Text(project),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
                           setState(() {
-                            _status = value;
+                            _selectedProject = value;
                           });
-                        }
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    _sectionLabel('Project *'),
-
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedProject,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Select project',
-                        prefixIcon: Icon(Icons.folder_outlined),
+                        },
+                        validator: (value) {
+                          return value == null ? 'Select a project' : null;
+                        },
                       ),
-                      items: _projects.map((project) {
-                        return DropdownMenuItem<String>(
-                          value: project,
-                          child: Text(project),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedProject = value;
-                        });
-                      },
-                      validator: (value) {
-                        return value == null ? 'Select a project' : null;
-                      },
-                    ),
 
-                    const SizedBox(height: 24),
-                  ],
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
 

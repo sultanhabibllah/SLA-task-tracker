@@ -61,6 +61,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(appState.currentUser, isNull);
-    expect(find.text('Please enter your email'), findsOneWidget);
+    expect(find.text('Email is required'), findsOneWidget);
   });
 }

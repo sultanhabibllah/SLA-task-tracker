@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/task.dart';
 import '../../state/app_state.dart';
 import 'create_task_screen.dart';
+import 'task_detail_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -40,6 +41,15 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
     // AppState notifies the Task List automatically when a
     // task is created, so no manual refresh is necessary.
+  }
+
+  // Open the details of a task, where it can be edited or completed.
+  void _openTaskDetail(Task task) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => TaskDetailScreen(taskId: task.id),
+      ),
+    );
   }
 
   String _slaLabel(Task task, AppState state) {
@@ -129,142 +139,154 @@ class _TaskListScreenState extends State<TaskListScreen> {
     final member = state.memberById(task.assigneeId);
     final status = _slaLabel(task, state);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
+    // Material and InkWell make the whole card tappable with a ripple.
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Material(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  task.title,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        child: InkWell(
+          onTap: () => _openTaskDetail(task),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        task.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.more_horiz,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  task.project,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.more_horiz, color: AppColors.textSecondary),
-            ],
-          ),
-
-          const SizedBox(height: 6),
-
-          Text(
-            task.project,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: _slaBackground(status),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _slaColor(status),
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${task.priority.label} Priority',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 18),
-
-          const Divider(height: 1, color: AppColors.border),
-
-          const SizedBox(height: 14),
-
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.midnight,
-                child: Text(
-                  member?.initials ?? '?',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.lime,
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              Expanded(
-                child: Text(
-                  member?.name ?? 'Unassigned',
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     color: AppColors.textSecondary,
                   ),
                 ),
-              ),
 
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 14,
-                color: AppColors.textSecondary,
-              ),
+                const SizedBox(height: 16),
 
-              const SizedBox(width: 6),
-
-              Text(
-                _formatDate(task.dueDate),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _slaBackground(status),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _slaColor(status),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${task.priority.label} Priority',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 18),
+
+                const Divider(height: 1, color: AppColors.border),
+
+                const SizedBox(height: 14),
+
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: AppColors.midnight,
+                      child: Text(
+                        member?.initials ?? '?',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.lime,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    Expanded(
+                      child: Text(
+                        member?.name ?? 'Unassigned',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    Text(
+                      _formatDate(task.dueDate),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
