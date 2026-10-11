@@ -1,7 +1,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/theme/app_colors.dart';
+import '../../models/member.dart';
 import '../../state/app_state.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -12,14 +14,13 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  int selectedProfile = 0;
-
   final _formKey = GlobalKey<FormState>();
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  String? _selectedMemberId;
   bool _obscurePassword = true;
+  bool _isSigningIn = false;
 
   @override
   void dispose() {
@@ -28,24 +29,125 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
-  void _continue() {
-    if (!_formKey.currentState!.validate()) {
+  Future<void> _continue() async {
+    if (_isSigningIn) return;
+
+    final members = context.read<AppState>().members;
+
+    if (members.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No team members are available.'),
+        ),
+      );
       return;
     }
 
-    final appState = context.read<AppState>();
-    final selectedMember = appState.members[selectedProfile];
+    final memberId = _selectedMemberId ?? members.first.id;
 
-    // Signing in swaps this screen for the app shell (see main.dart).
-    appState.signIn(selectedMember.id);
+    if (!_formKey.currentState!.validate()) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.midnight,
-        content: Text(
-          'Welcome, ${selectedMember.name}!',
-          style: const TextStyle(
-            color: AppColors.white,
+    setState(() {
+      _isSigningIn = true;
+    });
+
+    try {
+      // AppState saves the selected user and notifies AuthGate.
+      await context.read<AppState>().signIn(memberId);
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to sign in. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSigningIn = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildProfileCard(
+    Member member,
+    bool selected,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedMemberId = member.id;
+            _emailController.text = member.email;
+          });
+        },
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.softGreen
+                : AppColors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected
+                  ? AppColors.onTrack
+                  : AppColors.border,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.midnight,
+                child: Text(
+                  member.initials,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.lime,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      member.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      member.jobTitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Icon(
+                selected
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
+                color: selected
+                    ? AppColors.onTrack
+                    : AppColors.border,
+              ),
+            ],
           ),
         ),
       ),
@@ -54,7 +156,13 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final teamMembers = context.watch<AppState>().members;
+    final members = context.watch<AppState>().members;
+
+    final selectedId = members.any(
+      (member) => member.id == _selectedMemberId,
+    )
+        ? _selectedMemberId
+        : (members.isNotEmpty ? members.first.id : null);
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -65,7 +173,7 @@ class _SignInScreenState extends State<SignInScreen> {
             vertical: 28,
           ),
           children: [
-            // Sprintly branding
+            // Brand
             Row(
               children: [
                 Container(
@@ -95,7 +203,6 @@ class _SignInScreenState extends State<SignInScreen> {
 
             const SizedBox(height: 56),
 
-            // Welcome section
             const Text(
               'Welcome back.',
               style: TextStyle(
@@ -118,7 +225,6 @@ class _SignInScreenState extends State<SignInScreen> {
 
             const SizedBox(height: 40),
 
-            // Profile selection heading
             const Text(
               'Choose your profile',
               style: TextStyle(
@@ -140,94 +246,26 @@ class _SignInScreenState extends State<SignInScreen> {
 
             const SizedBox(height: 20),
 
-            // Selectable team member cards
-            ...List.generate(teamMembers.length, (index) {
-              final member = teamMembers[index];
-              final isSelected = selectedProfile == index;
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      selectedProfile = index;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.softGreen
-                          : AppColors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.onTrack
-                            : AppColors.border,
-                        width: isSelected ? 1.5 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 23,
-                          backgroundColor: AppColors.midnight,
-                          child: Text(
-                            member.initials,
-                            style: const TextStyle(
-                              color: AppColors.lime,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 14),
-
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                member.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                member.jobTitle,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        Icon(
-                          isSelected
-                              ? Icons.check_circle
-                              : Icons.radio_button_unchecked,
-                          color: isSelected
-                              ? AppColors.onTrack
-                              : AppColors.border,
-                          size: 24,
-                        ),
-                      ],
-                    ),
+            if (members.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'No team members available.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
                   ),
                 ),
-              );
-            }),
+              )
+            else
+              ...members.map(
+                (member) => _buildProfileCard(
+                  member,
+                  selectedId == member.id,
+                ),
+              ),
 
             const SizedBox(height: 28),
 
-            // Login form
             Form(
               key: _formKey,
               child: Column(
@@ -247,21 +285,22 @@ class _SignInScreenState extends State<SignInScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       hintText: 'Enter your email',
                       prefixIcon: Icon(Icons.mail_outline),
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your email';
+                      if (value == null ||
+                          value.trim().isEmpty) {
+                        return 'Email is required';
                       }
 
-                      final emailPattern =
-                          RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                      final pattern = RegExp(
+                        r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                      );
 
-                      if (!emailPattern.hasMatch(value.trim())) {
-                        return 'Please enter a valid email address';
+                      if (!pattern.hasMatch(value.trim())) {
+                        return 'Enter a valid email';
                       }
 
                       return null;
@@ -284,8 +323,6 @@ class _SignInScreenState extends State<SignInScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _continue(),
                     decoration: InputDecoration(
                       hintText: 'Enter your password',
                       prefixIcon:
@@ -305,15 +342,16 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
+                        return 'Password is required';
                       }
 
                       if (value.length < 6) {
-                        return 'Password must contain at least 6 characters';
+                        return 'Use at least 6 characters';
                       }
 
                       return null;
                     },
+                    onFieldSubmitted: (_) => _continue(),
                   ),
 
                   const SizedBox(height: 32),
@@ -321,10 +359,14 @@ class _SignInScreenState extends State<SignInScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _continue,
-                      child: const Text(
-                        'Continue',
-                        style: TextStyle(
+                      onPressed: _isSigningIn || members.isEmpty
+                          ? null
+                          : _continue,
+                      child: Text(
+                        _isSigningIn
+                            ? 'Signing in...'
+                            : 'Continue',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
@@ -346,8 +388,6 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
             ),
-
-            const SizedBox(height: 20),
           ],
         ),
       ),
