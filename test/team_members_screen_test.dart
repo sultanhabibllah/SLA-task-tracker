@@ -178,6 +178,30 @@ void main() {
     expect(find.text('Overdue'), findsOneWidget);
   });
 
+  testWidgets('tapping a task in the list opens it for editing', (
+    tester,
+  ) async {
+    final appState = await pumpScreen(tester);
+
+    await openMenu(tester, 'David Liu', 'View tasks');
+    await tester.tap(find.text('Set up project API routes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Task'), findsOneWidget);
+
+    // Reassigning the task takes it off David's list.
+    await tester.tap(find.text('David Liu').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sarah Kim').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save Changes'));
+    await tester.pumpAndSettle();
+
+    expect(appState.taskById('t2')!.assigneeId, 'm6');
+    expect(find.text('Edit Task'), findsNothing);
+    expect(find.text('No tasks assigned yet.'), findsOneWidget);
+  });
+
   testWidgets('the role can be changed but the last admin is kept', (
     tester,
   ) async {

@@ -5,10 +5,10 @@ import '../../core/sla/sla_status.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/member.dart';
 import '../../state/app_state.dart';
+import '../../widgets/edit_field_dialog.dart';
 import '../../widgets/member_avatar.dart';
 import '../../widgets/sprintly_header.dart';
 import '../../widgets/status_chip.dart';
-import 'edit_field_dialog.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});

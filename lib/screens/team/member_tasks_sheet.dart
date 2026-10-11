@@ -6,8 +6,10 @@ import '../../models/member.dart';
 import '../../models/task.dart';
 import '../../state/app_state.dart';
 import '../../widgets/status_chip.dart';
+import '../tasks/edit_task_screen.dart';
 
 // Bottom sheet listing the tasks assigned to one member, soonest due first.
+// Tapping a task opens it for editing.
 class MemberTasksSheet extends StatelessWidget {
   const MemberTasksSheet({super.key, required this.member});
 
@@ -58,7 +60,7 @@ class MemberTasksSheet extends StatelessWidget {
                       const Divider(height: 24, color: AppColors.border),
                   itemBuilder: (context, index) {
                     final task = tasks[index];
-                    return _taskRow(appState, task);
+                    return _taskRow(context, appState, task);
                   },
                 ),
               ),
@@ -68,39 +70,48 @@ class MemberTasksSheet extends StatelessWidget {
     );
   }
 
-  Widget _taskRow(AppState appState, Task task) {
+  Widget _taskRow(BuildContext context, AppState appState, Task task) {
     final dueDate = DateFormat('d MMM yyyy').format(task.dueDate);
 
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                task.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => EditTaskScreen(task: task)),
+        );
+      },
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Due $dueDate · ${task.priority.label} priority',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
+                const SizedBox(height: 4),
+                Text(
+                  'Due $dueDate · ${task.priority.label} priority',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        SlaChip(status: appState.slaOf(task)),
-      ],
+          const SizedBox(width: 12),
+          SlaChip(status: appState.slaOf(task)),
+          const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+        ],
+      ),
     );
   }
 }
