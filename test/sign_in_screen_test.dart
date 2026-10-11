@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
-import 'package:sprintly/models/member.dart';
 import 'package:sprintly/screens/auth/sign_in_screen.dart';
 import 'package:sprintly/state/app_state.dart';
 import 'package:sprintly/services/storage_service.dart';

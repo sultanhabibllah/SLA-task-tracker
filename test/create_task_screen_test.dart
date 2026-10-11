@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sprintly/core/theme/app_colors.dart';
-import 'package:sprintly/models/task.dart';
 import 'package:sprintly/screens/tasks/create_task_screen.dart';
 import 'package:sprintly/services/storage_service.dart';
 import 'package:sprintly/state/app_state.dart';

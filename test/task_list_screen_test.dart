@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sprintly/models/task.dart';
+import 'package:sprintly/screens/tasks/edit_task_screen.dart';
+import 'package:sprintly/screens/tasks/task_detail_screen.dart';
 import 'package:sprintly/screens/tasks/task_list_screen.dart';
 import 'package:sprintly/services/storage_service.dart';
 import 'package:sprintly/state/app_state.dart';
@@ -93,6 +95,23 @@ void main() {
       expect(find.text('Design Login Screen'), findsOneWidget);
     });
 
+    testWidgets('Tapping a task opens its details, then Edit Task', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Design Login Screen'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailScreen), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Edit task'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EditTaskScreen), findsOneWidget);
+    });
+
     testWidgets('Search filters tasks by title', (tester) async {
       await tester.pumpWidget(buildTestApp());
 
@@ -123,6 +142,7 @@ void main() {
 
       // Verify that clearing the filter restores the list.
       await tester.ensureVisible(find.text('Clear filters'));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Clear filters'));
       await tester.pumpAndSettle();
@@ -140,7 +160,6 @@ void main() {
         completedFilter,
         100,
         scrollable: find.byType(Scrollable).at(1),
-        scrollDirection: AxisDirection.right,
       );
 
       await tester.tap(completedFilter);
