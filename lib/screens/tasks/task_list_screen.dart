@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/task.dart';
 import '../../state/app_state.dart';
+import 'create_task_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -29,6 +30,16 @@ class _TaskListScreenState extends State<TaskListScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Open Create Task and return to the updated task list.
+  Future<void> _openCreateTask() async {
+    await Navigator.of(context).push<Task>(
+      MaterialPageRoute<Task>(builder: (context) => const CreateTaskScreen()),
+    );
+
+    // AppState notifies the Task List automatically when a
+    // task is created, so no manual refresh is necessary.
   }
 
   String _slaLabel(Task task, AppState state) {
@@ -143,7 +154,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.more_horiz, color: AppColors.textSecondary),
+              const Icon(Icons.more_horiz, color: AppColors.textSecondary),
             ],
           ),
 
@@ -181,7 +192,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   ),
                 ),
               ),
-
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 11,
@@ -267,10 +277,21 @@ class _TaskListScreenState extends State<TaskListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
 
+      // Opens the Create Task screen.
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'task_list_add',
+        tooltip: 'Create task',
+        backgroundColor: AppColors.midnight,
+        foregroundColor: AppColors.lime,
+        onPressed: _openCreateTask,
+        child: const Icon(Icons.add, size: 28),
+      ),
+
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
           children: [
+            // Brand header
             Row(
               children: [
                 Container(
@@ -323,6 +344,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
             const SizedBox(height: 28),
 
+            // Task search
             TextField(
               controller: _searchController,
               onChanged: (_) => setState(() {}),
@@ -334,6 +356,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
             const SizedBox(height: 20),
 
+            // SLA filters
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -367,9 +390,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'All Tasks',
-                  style: TextStyle(
+                Text(
+                  _selectedFilter == 'All'
+                      ? 'All Tasks'
+                      : '$_selectedFilter Tasks',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -398,9 +423,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                       size: 48,
                       color: AppColors.textSecondary,
                     ),
-
                     const SizedBox(height: 16),
-
                     const Text(
                       'No tasks found',
                       style: TextStyle(
@@ -409,16 +432,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
                         color: AppColors.textPrimary,
                       ),
                     ),
-
                     const SizedBox(height: 8),
-
                     const Text(
                       'Try another search or filter.',
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
-
                     const SizedBox(height: 16),
-
                     TextButton(
                       onPressed: () {
                         _searchController.clear();
@@ -434,7 +453,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
             else
               ...visibleTasks.map((task) => _buildTaskCard(task, state)),
 
-            const SizedBox(height: 28),
+            // Keeps the final card clear of the floating button.
+            const SizedBox(height: 90),
           ],
         ),
       ),
