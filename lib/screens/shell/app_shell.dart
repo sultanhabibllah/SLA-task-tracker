@@ -4,8 +4,8 @@ import '../../core/theme/app_colors.dart';
 import '../home/dashboard_screen.dart';
 import '../profile/profile_screen.dart';
 import '../team/team_members_screen.dart';
+import '../tasks/task_list_screen.dart';
 
-// Main frame of the app after sign-in: 5 tabs with a bottom navigation bar
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -16,10 +16,9 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedTab = 0;
 
-  // Each team member replaces their tab's entry here with the real screen
   static const List<Widget> _tabs = [
     DashboardScreen(),
-    _ComingSoonTab(title: 'Tasks', icon: Icons.check_box_outlined),
+    TaskListScreen(),
     _ComingSoonTab(title: 'Calendar', icon: Icons.calendar_today_outlined),
     TeamMembersScreen(),
     ProfileScreen(),
@@ -29,8 +28,6 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
-      // IndexedStack keeps every tab alive, so a tab keeps its scroll position
-      // and form input when the user switches away and back.
       body: SafeArea(
         child: IndexedStack(index: _selectedTab, children: _tabs),
       ),
