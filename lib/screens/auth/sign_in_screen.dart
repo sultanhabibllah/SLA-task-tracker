@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../state/app_state.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -19,24 +21,6 @@ class _SignInScreenState extends State<SignInScreen> {
 
   bool _obscurePassword = true;
 
-  final List<Map<String, String>> teamMembers = [
-    {
-      'name': 'Alex Carter',
-      'role': 'Project Manager',
-      'initials': 'AC',
-    },
-    {
-      'name': 'Priya Sharma',
-      'role': 'UI/UX Designer',
-      'initials': 'PS',
-    },
-    {
-      'name': 'James Wilson',
-      'role': 'Developer',
-      'initials': 'JW',
-    },
-  ];
-
   @override
   void dispose() {
     _emailController.dispose();
@@ -49,13 +33,17 @@ class _SignInScreenState extends State<SignInScreen> {
       return;
     }
 
-    final selectedMember = teamMembers[selectedProfile];
+    final appState = context.read<AppState>();
+    final selectedMember = appState.members[selectedProfile];
+
+    // Signing in swaps this screen for the app shell (see main.dart).
+    appState.signIn(selectedMember.id);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppColors.midnight,
         content: Text(
-          'Welcome, ${selectedMember['name']}!',
+          'Welcome, ${selectedMember.name}!',
           style: const TextStyle(
             color: AppColors.white,
           ),
@@ -66,6 +54,8 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final teamMembers = context.watch<AppState>().members;
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -184,7 +174,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           radius: 23,
                           backgroundColor: AppColors.midnight,
                           child: Text(
-                            member['initials']!,
+                            member.initials,
                             style: const TextStyle(
                               color: AppColors.lime,
                               fontWeight: FontWeight.bold,
@@ -200,7 +190,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                 CrossAxisAlignment.start,
                             children: [
                               Text(
-                                member['name']!,
+                                member.name,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -209,7 +199,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                member['role']!,
+                                member.jobTitle,
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: AppColors.textSecondary,
