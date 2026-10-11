@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
 import '../../core/theme/app_colors.dart';
+import '../home/dashboard_screen.dart';
 import '../profile/profile_screen.dart';
 import '../team/team_members_screen.dart';
 
-// Main frame of the app after sign-in: five tabs with a bottom navigation bar.
+// Main frame of the app after sign-in: 5 tabs with a bottom navigation bar
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -14,9 +16,9 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedTab = 0;
 
-  // Each team member replaces their tab's entry here with the real screen.
+  // Each team member replaces their tab's entry here with the real screen
   static const List<Widget> _tabs = [
-    _ComingSoonTab(title: 'Home', icon: Icons.home_outlined),
+    DashboardScreen(),
     _ComingSoonTab(title: 'Tasks', icon: Icons.check_box_outlined),
     _ComingSoonTab(title: 'Calendar', icon: Icons.calendar_today_outlined),
     TeamMembersScreen(),
@@ -30,10 +32,7 @@ class _AppShellState extends State<AppShell> {
       // IndexedStack keeps every tab alive, so a tab keeps its scroll position
       // and form input when the user switches away and back.
       body: SafeArea(
-        child: IndexedStack(
-          index: _selectedTab,
-          children: _tabs,
-        ),
+        child: IndexedStack(index: _selectedTab, children: _tabs),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedTab,
@@ -101,10 +100,7 @@ class _ComingSoonTab extends StatelessWidget {
           const SizedBox(height: 4),
           const Text(
             'This screen is not built yet.',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
         ],
       ),
