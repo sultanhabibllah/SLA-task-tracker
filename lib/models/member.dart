@@ -64,6 +64,8 @@ class Member {
     };
   }
 
+  // Any field added later must be read with a default here, otherwise members
+  // saved by an older version of the app can no longer be loaded.
   factory Member.fromJson(Map<String, dynamic> json) {
     return Member(
       id: json['id'] as String,

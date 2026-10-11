@@ -49,7 +49,7 @@ class Task {
     required this.createdAt,
     this.priority = TaskPriority.medium,
     this.status = TaskStatus.todo,
-    this.project = '',
+    required this.project,
     this.tags = const [],
   });
 
@@ -99,6 +99,8 @@ class Task {
     };
   }
 
+  // Any field added later must be read with a default here, otherwise tasks
+  // saved by an older version of the app can no longer be loaded.
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
       id: json['id'] as String,
@@ -108,8 +110,8 @@ class Task {
       dueDate: DateTime.parse(json['dueDate'] as String),
       priority: TaskPriority.values.byName(json['priority'] as String),
       status: TaskStatus.values.byName(json['status'] as String),
-      project: json['project'] as String,
-      tags: (json['tags'] as List).cast<String>(),
+      project: json['project'] as String? ?? '',
+      tags: (json['tags'] as List? ?? []).cast<String>(),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }

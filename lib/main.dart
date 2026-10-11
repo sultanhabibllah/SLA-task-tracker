@@ -37,7 +37,9 @@ class SprintlyApp extends StatelessWidget {
 }
 
 // Shows the sign-in screen until a team member is signed in, then the app.
-// Signing out anywhere brings the user back here automatically.
+// Signing out from a tab swaps back to sign-in automatically. A screen opened
+// with Navigator.push sits above this gate, so it must pop back to the first
+// route before calling signOut().
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 

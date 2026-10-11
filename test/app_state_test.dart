@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sprintly/core/sla/sla_status.dart';
 import 'package:sprintly/models/member.dart';
 import 'package:sprintly/models/task.dart';
 import 'package:sprintly/services/storage_service.dart';
@@ -23,6 +25,9 @@ void main() {
       description: 'Cover the app state',
       assigneeId: 'm1',
       dueDate: DateTime(2026, 10, 20),
+      priority: TaskPriority.high,
+      status: TaskStatus.inProgress,
+      project: 'Mobile App',
       tags: const ['QA'],
       createdAt: DateTime(2026, 10, 10),
     );
@@ -49,8 +54,20 @@ void main() {
       joinedAt: DateTime(2026, 1, 1),
     );
 
-    expect(Task.fromJson(task.toJson()).toJson(), task.toJson());
-    expect(Member.fromJson(member.toJson()).toJson(), member.toJson());
+    final loadedTask = Task.fromJson(task.toJson());
+    final loadedMember = Member.fromJson(member.toJson());
+
+    expect(loadedTask.title, 'Write tests');
+    expect(loadedTask.assigneeId, 'm1');
+    expect(loadedTask.dueDate, DateTime(2026, 10, 20));
+    expect(loadedTask.priority, TaskPriority.high);
+    expect(loadedTask.status, TaskStatus.inProgress);
+    expect(loadedTask.project, 'Mobile App');
+    expect(loadedTask.tags, ['QA']);
+    expect(loadedMember.name, 'Sam Doe');
+    expect(loadedMember.role, MemberRole.admin);
+    expect(loadedMember.presence, MemberPresence.away);
+    expect(loadedMember.joinedAt, DateTime(2026, 1, 1));
     expect(member.initials, 'SD');
   });
 
@@ -104,21 +121,74 @@ void main() {
 
   test('progress and SLA counts follow the task list', () async {
     final state = await loadState();
-    final total = state.tasks.length;
-    final done = state.tasks.where((task) => task.isDone).length;
 
-    expect(state.progress, done / total);
+    // Starter data: 6 tasks, 1 done, 1 overdue, 1 due tomorrow,
+    // 1 high priority due in 2 days and 2 due later.
+    expect(state.progress, 1 / 6);
+    expect(state.slaCounts(), {
+      SlaStatus.completed: 1,
+      SlaStatus.overdue: 1,
+      SlaStatus.atRisk: 2,
+      SlaStatus.onTrack: 2,
+    });
+
+    final tomorrowTask = state.taskById('t1')!;
+    await state.updateTask(tomorrowTask.copyWith(status: TaskStatus.done));
+
+    expect(state.progress, 2 / 6);
+    expect(state.slaCounts()[SlaStatus.completed], 2);
+    expect(state.slaCounts()[SlaStatus.atRisk], 1);
+    expect(state.slaCounts(subset: state.tasksFor('m2')), {
+      SlaStatus.completed: 1,
+      SlaStatus.overdue: 0,
+      SlaStatus.atRisk: 0,
+      SlaStatus.onTrack: 0,
+    });
+  });
+
+  test('starter due dates stay fixed once the app has been opened', () async {
+    final first = await loadState();
+    final dueDates = [for (final task in first.tasks) task.dueDate];
+
+    final restarted = await loadState();
+
+    expect([for (final task in restarted.tasks) task.dueDate], dueDates);
     expect(
-      state.slaCounts().values.reduce((a, b) => a + b),
-      total,
+      (await SharedPreferences.getInstance()).getString('sprintly.tasks'),
+      isNotNull,
     );
   });
 
-  test('unreadable saved data falls back to the starter data', () async {
+  test('signing in as an unknown member does nothing', () async {
+    final state = await loadState();
+    await state.signIn('nobody');
+
+    expect(state.currentUser, isNull);
+    expect((await loadState()).currentUser, isNull);
+  });
+
+  test('unreadable saved data starts again from the starter data', () async {
     SharedPreferences.setMockInitialValues({'sprintly.tasks': 'not json'});
 
     final state = await loadState();
 
-    expect(state.tasks, isNotEmpty);
+    expect(state.taskById('t1'), isNotNull);
+  });
+
+  test('one damaged saved task does not lose the others', () async {
+    final good = newTask('t-good').toJson();
+    final damaged = {'id': 't-bad', 'title': 'No other fields'};
+    final older = Map<String, dynamic>.from(newTask('t-older').toJson())
+      ..remove('project')
+      ..remove('tags');
+    SharedPreferences.setMockInitialValues({
+      'sprintly.tasks': jsonEncode([good, damaged, older]),
+    });
+
+    final state = await loadState();
+
+    expect([for (final task in state.tasks) task.id], ['t-good', 't-older']);
+    expect(state.taskById('t-older')!.project, '');
+    expect(state.taskById('t-older')!.tags, isEmpty);
   });
 }

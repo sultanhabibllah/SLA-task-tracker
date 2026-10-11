@@ -19,6 +19,7 @@ void main() {
       dueDate: dueDate,
       status: status,
       priority: priority,
+      project: 'Mobile App',
       createdAt: DateTime(2026, 10, 1),
     );
   }
@@ -51,6 +52,63 @@ void main() {
     final task = taskDue(DateTime(2026, 10, 12));
 
     expect(classifySla(task, now: now), SlaStatus.onTrack);
+  });
+
+  test('the deadline is the last second of the due day', () {
+    final task = taskDue(DateTime(2026, 10, 10));
+
+    expect(
+      classifySla(task, now: DateTime(2026, 10, 10, 23, 59, 59)),
+      SlaStatus.atRisk,
+    );
+    expect(
+      classifySla(task, now: DateTime(2026, 10, 11)),
+      SlaStatus.overdue,
+    );
+  });
+
+  test('exactly 48 hours left is At Risk, one second more is On Track', () {
+    final task = taskDue(DateTime(2026, 10, 12));
+    final exactly48h = task.deadline.subtract(const Duration(hours: 48));
+
+    expect(classifySla(task, now: exactly48h), SlaStatus.atRisk);
+    expect(
+      classifySla(
+        task,
+        now: exactly48h.subtract(const Duration(seconds: 1)),
+      ),
+      SlaStatus.onTrack,
+    );
+  });
+
+  test('high priority: exactly 72 hours left is At Risk, more is On Track', () {
+    final task = taskDue(DateTime(2026, 10, 14), priority: TaskPriority.high);
+    final exactly72h = task.deadline.subtract(const Duration(hours: 72));
+
+    expect(classifySla(task, now: exactly72h), SlaStatus.atRisk);
+    expect(
+      classifySla(
+        task,
+        now: exactly72h.subtract(const Duration(seconds: 1)),
+      ),
+      SlaStatus.onTrack,
+    );
+  });
+
+  test('low priority uses the same 48 hour window as medium', () {
+    final dueDate = DateTime(2026, 10, 12);
+
+    expect(
+      classifySla(taskDue(dueDate, priority: TaskPriority.low), now: now),
+      SlaStatus.onTrack,
+    );
+    expect(
+      classifySla(
+        taskDue(DateTime(2026, 10, 11), priority: TaskPriority.low),
+        now: now,
+      ),
+      SlaStatus.atRisk,
+    );
   });
 
   test('a high priority task becomes At Risk a day earlier', () {

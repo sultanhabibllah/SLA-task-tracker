@@ -70,8 +70,7 @@ List<Member> seedMembers() {
 // Due dates are relative to today so every SLA status shows up on first run.
 List<Task> seedTasks() {
   final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  DateTime inDays(int days) => today.add(Duration(days: days));
+  DateTime inDays(int days) => DateTime(now.year, now.month, now.day + days);
 
   return [
     Task(
@@ -126,7 +125,8 @@ List<Task> seedTasks() {
       title: 'Dashboard wireframes',
       description: 'Sketch the dashboard layout with progress and SLA summary.',
       assigneeId: 'm4',
-      dueDate: inDays(3),
+      // Two days out: At Risk only because the task is high priority.
+      dueDate: inDays(2),
       priority: TaskPriority.high,
       project: 'Web Dashboard',
       tags: ['Design'],

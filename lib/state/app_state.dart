@@ -6,7 +6,8 @@ import '../models/task.dart';
 import '../services/storage_service.dart';
 
 // Single source of truth for the app. Screens read from it with Provider and
-// call its methods to change data; every change is saved and then notified.
+// call its methods to change data. Each change updates the screens straight
+// away and is then saved to the device.
 class AppState extends ChangeNotifier {
   AppState(this._storage);
 
@@ -24,10 +25,18 @@ class AppState extends ChangeNotifier {
     return id == null ? null : memberById(id);
   }
 
-  // Reads saved data, or the starter data on first launch.
+  // Reads saved data. On first launch the starter data is used and saved, so
+  // its due dates stay fixed from then on.
   Future<void> load() async {
-    _members = await _storage.loadMembers() ?? seedMembers();
-    _tasks = await _storage.loadTasks() ?? seedTasks();
+    final savedMembers = await _storage.loadMembers();
+    final savedTasks = await _storage.loadTasks();
+
+    _members = savedMembers ?? seedMembers();
+    _tasks = savedTasks ?? seedTasks();
+
+    if (savedMembers == null) await _storage.saveMembers(_members);
+    if (savedTasks == null) await _storage.saveTasks(_tasks);
+
     _currentUserId = await _storage.loadCurrentUserId();
     notifyListeners();
   }
@@ -56,13 +65,13 @@ class AppState extends ChangeNotifier {
 
   // SLA and progress
 
-  SlaStatus slaOf(Task task) => classifySla(task);
+  SlaStatus slaOf(Task task, {DateTime? now}) => classifySla(task, now: now);
 
   // Counts tasks per SLA status. Uses every task unless a subset is given.
-  Map<SlaStatus, int> slaCounts([Iterable<Task>? subset]) {
+  Map<SlaStatus, int> slaCounts({Iterable<Task>? subset, DateTime? now}) {
     final counts = {for (final status in SlaStatus.values) status: 0};
     for (final task in subset ?? _tasks) {
-      final status = slaOf(task);
+      final status = slaOf(task, now: now);
       counts[status] = counts[status]! + 1;
     }
     return counts;
@@ -77,6 +86,8 @@ class AppState extends ChangeNotifier {
   // Session
 
   Future<void> signIn(String memberId) async {
+    if (memberById(memberId) == null) return;
+
     _currentUserId = memberId;
     notifyListeners();
     await _storage.saveCurrentUserId(memberId);

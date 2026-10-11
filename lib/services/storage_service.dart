@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/member.dart';
 import '../models/task.dart';
@@ -10,8 +11,8 @@ class StorageService {
   static const _tasksKey = 'sprintly.tasks';
   static const _currentUserKey = 'sprintly.currentUserId';
 
-  // Returns null when nothing has been saved yet or the saved data is unreadable,
-  // so the caller can fall back to the starter data.
+  // Returns null when nothing has been saved yet, so the caller can start
+  // from the starter data.
   Future<List<Member>?> loadMembers() async {
     final prefs = await SharedPreferences.getInstance();
     return _decodeList(prefs.getString(_membersKey), Member.fromJson);
@@ -54,13 +55,23 @@ class StorageService {
   ) {
     if (raw == null) return null;
 
+    final List list;
     try {
-      final list = jsonDecode(raw) as List;
-      return list
-          .map((item) => fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
+      list = jsonDecode(raw) as List;
+    } catch (error) {
+      debugPrint('Saved data could not be read: $error');
       return null;
     }
+
+    // One damaged record is skipped instead of throwing away the whole list.
+    final items = <T>[];
+    for (final item in list) {
+      try {
+        items.add(fromJson(item as Map<String, dynamic>));
+      } catch (error) {
+        debugPrint('Skipped a saved record that could not be read: $error');
+      }
+    }
+    return items;
   }
 }
