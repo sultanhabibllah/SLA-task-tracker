@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../profile/profile_screen.dart';
 import '../team/team_members_screen.dart';
 
 // Main frame of the app after sign-in: five tabs with a bottom navigation bar.
@@ -19,7 +20,7 @@ class _AppShellState extends State<AppShell> {
     _ComingSoonTab(title: 'Tasks', icon: Icons.check_box_outlined),
     _ComingSoonTab(title: 'Calendar', icon: Icons.calendar_today_outlined),
     TeamMembersScreen(),
-    _ComingSoonTab(title: 'Profile', icon: Icons.person_outline),
+    ProfileScreen(),
   ];
 
   @override
