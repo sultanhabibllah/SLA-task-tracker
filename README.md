@@ -7,8 +7,8 @@ are on track, at risk, overdue or completed.
 ## Features
 
 - **Sign in** by choosing a team profile.
-- **Team Members**: browse, filter (All / Admins / Members) and search the team, add
-  members, change roles, remove members, and view any member's tasks.
+- **Team Members**: browse, filter (All / Admins / Members) and search the team, and
+  view any member's tasks. Admins can also add members, change roles and remove members.
 - **Edit Task**: change title, description, assignee, due date, priority, status,
   project and tags, with a live preview of the task's SLA status. Delete a task.
 - **Profile**: edit your details and status, see your own workload by SLA status,
