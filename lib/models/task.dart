@@ -28,6 +28,23 @@ extension TaskStatusLabel on TaskStatus {
   }
 }
 
+// a file that could be attached to a task
+class TaskAttachment {
+  final String name;
+  final String size;
+
+  const TaskAttachment({required this.name, required this.size});
+
+  Map<String, dynamic> toJson() => {'name': name, 'size': size};
+
+  factory TaskAttachment.fromJson(Map<String, dynamic> json) {
+    return TaskAttachment(
+      name: json['name'] as String,
+      size: json['size'] as String? ?? '',
+    );
+  }
+}
+
 class Task {
   final String id;
   final String title;
@@ -38,6 +55,7 @@ class Task {
   final TaskStatus status;
   final String project;
   final List<String> tags;
+  final List<TaskAttachment> attachments;
   final DateTime createdAt;
 
   const Task({
@@ -51,11 +69,12 @@ class Task {
     this.status = TaskStatus.todo,
     required this.project,
     this.tags = const [],
+    this.attachments = const [],
   });
 
   bool get isDone => status == TaskStatus.done;
 
-  // A task is due by the end of its due day, not at midnight when it starts.
+  // task is due by the end(23:59) of its due day (not midnight to avoid confusion)
   DateTime get deadline {
     return DateTime(dueDate.year, dueDate.month, dueDate.day, 23, 59, 59);
   }
@@ -69,6 +88,7 @@ class Task {
     TaskStatus? status,
     String? project,
     List<String>? tags,
+    List<TaskAttachment>? attachments,
   }) {
     return Task(
       id: id,
@@ -80,6 +100,7 @@ class Task {
       status: status ?? this.status,
       project: project ?? this.project,
       tags: tags ?? this.tags,
+      attachments: attachments ?? this.attachments,
       createdAt: createdAt,
     );
   }
@@ -95,6 +116,7 @@ class Task {
       'status': status.name,
       'project': project,
       'tags': tags,
+      'attachments': [for (final a in attachments) a.toJson()],
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -112,6 +134,10 @@ class Task {
       status: TaskStatus.values.byName(json['status'] as String),
       project: json['project'] as String? ?? '',
       tags: (json['tags'] as List? ?? []).cast<String>(),
+      attachments: [
+        for (final a in json['attachments'] as List? ?? [])
+          TaskAttachment.fromJson(a as Map<String, dynamic>),
+      ],
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
