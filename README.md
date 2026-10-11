@@ -40,6 +40,7 @@ Built as a collaborative software development project, Sprintly demonstrates Flu
 - Identify scheduled work and approaching deadlines.
 - Review tasks associated with selected dates.
 - Use visual indicators to distinguish task conditions.
+- Move between months, jump back to today, and mark a task done or reopen it from the selected day.
 
 ### Team Management
 - Browse and search team members.
@@ -54,12 +55,14 @@ Built as a collaborative software development project, Sprintly demonstrates Flu
 - View overall completion statistics.
 - Review project progress and task performance.
 - Identify overdue and at-risk workloads.
+- Switch between This Month and All Time. Opened from the chart button on Home.
 
 ### Alerts and Attention
 - Identify tasks requiring immediate attention.
 - Highlight overdue work and approaching deadlines.
 - Review prioritized task alerts.
 - Navigate to relevant tasks.
+- See on-track deadlines due in the next 7 days. Opened from the bell on Home.
 
 ### User Profile
 - View and update profile information.
@@ -157,7 +160,7 @@ Sprintly uses:
 - Flutter's `Navigator` for opening detail screens and forms.
 - An `IndexedStack` to preserve tab state when switching between major sections.
 
-Additional functionality, including Analytics and Alerts, is accessed through the application navigation and relevant screens.
+Alerts opens from the bell on the Home screen and Task Statistics from the chart button beside it.
 
 ### Validation and Error Handling
 
@@ -194,7 +197,9 @@ lib/
 │   ├── tasks/
 │   ├── team/
 │   ├── profile/
-│   └── other feature screens/
+│   ├── calendar/
+│   ├── alerts/
+│   └── statistics/
 ├── services/
 │   └── storage_service.dart
 ├── state/
@@ -268,6 +273,12 @@ flutter analyze
 
 ```bash
 flutter test
+```
+
+Timing checks for the Alerts, Calendar and Statistics helpers live in `test/perf/`:
+
+```bash
+flutter test test/perf/
 ```
 
 ### Integration Tests

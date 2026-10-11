@@ -1,242 +1,159 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/sla/task_insights.dart';
+import '../../core/theme/app_colors.dart';
+import '../../models/task.dart';
+import '../../state/app_state.dart';
+import '../../widgets/count_tile.dart';
+import '../../widgets/sprintly_header.dart';
+import 'alert_section.dart';
+
+// Everything that needs attention: overdue tasks, tasks at risk, and the
+// on-track deadlines coming up in the next week. Built from the live task
+// list, so it updates as soon as a task changes.
 class AlertsScreen extends StatelessWidget {
   const AlertsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final tasks = context.watch<AppState>().tasks;
+    final groups = groupAlerts(tasks);
+    final canPop = Navigator.of(context).canPop();
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              _buildStatusGrid(),
-              const SizedBox(height: 24),
-              
-              // Overdue Tasks Section
-              _buildSectionHeader(
-                title: "Overdue Tasks (2)",
-                icon: Icons.error_outline,
-                iconColor: const Color(0xFFDC3545),
-                headerBgColor: const Color(0xFFFFF5F5),
-              ),
-              const SizedBox(height: 8),
-              _buildTaskCard(
-                title: "Test Application",
-                subtitle: "Quality Assurance • Mobile App",
-                timeText: "3 days ago",
-                timeColor: const Color(0xFFDC3545),
-                leadingIcon: Icons.science_outlined,
-                avatarUrl: "https://pravatar.cc",
-              ),
-              
-              const SizedBox(height: 20),
-  
-              // At Risk Tasks Section
-              _buildSectionHeader(
-                title: "At Risk Tasks (3)",
-                icon: Icons.warning_amber_rounded,
-                iconColor: const Color(0xFFFFC107),
-                headerBgColor: const Color(0xFFFFF9E6),
-              ),
-              const SizedBox(height: 8),
-              _buildTaskCard(
-                title: "Implement Local Storage",
-                subtitle: "Mobile App • Development",
-                timeText: "Due in 2 days",
-                timeColor: const Color(0xFFFFC107),
-                leadingIcon: Icons.storage_outlined,
-                avatarUrl: "https://pravatar.cc",
-              ),
-              
-              const SizedBox(height: 20),
-  
-              // Upcoming Deadlines Section
-              _buildSectionHeader(
-                title: "Upcoming Deadlines (4)",
-                icon: Icons.calendar_today_outlined,
-                iconColor: const Color(0xFF0D6EFD),
-                headerBgColor: const Color(0xFFF0F5FF),
-              ),
-              const SizedBox(height: 8),
-              _buildTaskCard(
-                title: "Design Login Screen",
-                subtitle: "UI/UX Design • Mobile App",
-                timeText: "10 Dec 2024\n2 days left",
-                timeColor: Colors.grey.shade600,
-                leadingIcon: Icons.description_outlined,
-                avatarUrl: "https://pravatar.cc",
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          children: [
+            SprintlyHeader(
+              title: 'Alerts & Attention',
+              subtitle: 'Stay on top of important updates and upcoming '
+                  'deadlines.',
+              onBack: canPop ? () => Navigator.of(context).pop() : null,
+            ),
+            const SizedBox(height: 20),
+            _summary(groups),
+            const SizedBox(height: 20),
+            AlertSection(
+              key: const ValueKey('alerts-overdue'),
+              title: 'Overdue Tasks',
+              icon: Icons.error_outline,
+              color: AppColors.overdue,
+              background: AppColors.softRed,
+              tasks: groups.overdue,
+              trailingFor: (task) => _dueText(task, AppColors.overdue),
+              emptyMessage: 'Nothing is overdue. Nice work.',
+            ),
+            const SizedBox(height: 16),
+            AlertSection(
+              key: const ValueKey('alerts-at-risk'),
+              title: 'At Risk Tasks',
+              icon: Icons.warning_amber_rounded,
+              color: AppColors.atRisk,
+              background: AppColors.softYellow,
+              tasks: groups.atRisk,
+              trailingFor: (task) => _dueText(task, AppColors.atRisk),
+              emptyMessage: 'No task is close to its deadline.',
+            ),
+            const SizedBox(height: 16),
+            AlertSection(
+              key: const ValueKey('alerts-upcoming'),
+              title: 'Upcoming Deadlines',
+              icon: Icons.calendar_month_outlined,
+              color: const Color(0xFF3B6FD8),
+              background: AppColors.softBlue,
+              tasks: groups.upcoming,
+              trailingFor: _dateText,
+              emptyMessage: 'No other deadlines in the next 7 days.',
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // --- UI Component Modules ---
-
-  Widget _buildHeader() {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Alerts & Attention',
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.extrabold, color: Color(0xFF0F172A)),
-        ),
-        SizedBox(height: 4),
-        Text(
-          'Stay on top of important updates\nand upcoming deadlines.',
-          style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.3),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatusGrid() {
+  Widget _summary(AlertGroups groups) {
     return Row(
       children: [
-        Expanded(child: _buildGridItem("2", "Overdue", const Color(0xFFDC3545), Icons.error_outline, const Color(0xFFFFF5F5))),
-        const SizedBox(width: 10),
-        Expanded(child: _buildGridItem("3", "At Risk", const Color(0xFFFFC107), Icons.warning_amber_rounded, const Color(0xFFFFF9E6))),
-        const SizedBox(width: 10),
-        Expanded(child: _buildGridItem("4", "Upcoming", const Color(0xFF0D6EFD), Icons.calendar_today_outlined, const Color(0xFFF0F5FF))),
-        const SizedBox(width: 10),
-        Expanded(child: _buildGridItem("8", "On Track", const Color(0xFF198754), Icons.check_circle_outline, const Color(0xFFE8F5E9))),
+        Expanded(
+          child: CountTile(
+            key: const ValueKey('alert-tile-overdue'),
+            icon: Icons.error_outline,
+            color: AppColors.overdue,
+            background: AppColors.softRed,
+            count: groups.overdue.length,
+            label: 'Overdue',
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: CountTile(
+            key: const ValueKey('alert-tile-at-risk'),
+            icon: Icons.warning_amber_rounded,
+            color: AppColors.atRisk,
+            background: AppColors.softYellow,
+            count: groups.atRisk.length,
+            label: 'At Risk',
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: CountTile(
+            key: const ValueKey('alert-tile-upcoming'),
+            icon: Icons.calendar_month_outlined,
+            color: const Color(0xFF3B6FD8),
+            background: AppColors.softBlue,
+            count: groups.upcoming.length,
+            label: 'Upcoming',
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: CountTile(
+            key: const ValueKey('alert-tile-on-track'),
+            icon: Icons.check_circle_outline,
+            color: AppColors.onTrack,
+            background: AppColors.softGreen,
+            count: groups.onTrackCount,
+            label: 'On Track',
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildGridItem(String count, String label, Color color, IconData icon, Color bgColor) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 12),
-          Text(count, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
-        ],
+  Widget _dueText(Task task, Color color) {
+    return Text(
+      dueLabel(task),
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: color,
       ),
     );
   }
 
-  Widget _buildSectionHeader({
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required Color headerBgColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: headerBgColor,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: iconColor, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+  // Date on top and days left underneath, as in the design.
+  Widget _dateText(Task task) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          DateFormat('d MMM yyyy').format(task.dueDate),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-          const Spacer(),
-          Text(
-            "View all",
-            style: TextStyle(fontSize: 12, color: iconColor, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(width: 4),
-          Icon(Icons.arrow_forward_ios, size: 10, color: iconColor),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskCard({
-    required String title,
-    required String subtitle,
-    required String timeText,
-    required Color timeColor,
-    required IconData leadingIcon,
-    required String avatarUrl,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(leadingIcon, color: const Color(0xFF334155), size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              CircleAvatar(
-                radius: 14,
-                backgroundImage: NetworkImage(avatarUrl),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                timeText,
-                textAlign: TextAlign.right,
-                style: TextStyle(fontSize: 10, color: timeColor, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+        Text(
+          dueLabel(task),
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
+      ],
     );
   }
 }
