@@ -141,10 +141,6 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
       _showMessage('Reassign ${member.name}\'s tasks before removing them.');
       return;
     }
-    if (_isLastAdmin(member)) {
-      _showMessage('The team needs at least one admin.');
-      return;
-    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -194,6 +190,9 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
     final members = appState.members;
     final visibleMembers = _visibleMembers(members);
 
+    // Members can browse the team; only admins get the controls that change it.
+    final canManage = appState.isAdmin;
+
     final adminCount =
         members.where((member) => member.role == MemberRole.admin).length;
 
@@ -210,16 +209,18 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
               icon: Icon(_searching ? Icons.close : Icons.search),
               color: AppColors.textPrimary,
             ),
-            const SizedBox(width: 4),
-            IconButton(
-              onPressed: _openAddMember,
-              tooltip: 'Add member',
-              icon: const Icon(Icons.add),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.lime,
-                foregroundColor: AppColors.midnight,
+            if (canManage) ...[
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: _openAddMember,
+                tooltip: 'Add member',
+                icon: const Icon(Icons.add),
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.lime,
+                  foregroundColor: AppColors.midnight,
+                ),
               ),
-            ),
+            ],
           ],
         ),
 
@@ -302,6 +303,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
             child: _MemberCard(
               member: member,
               workload: _workloadSummary(appState, member),
+              canManage: canManage,
               onAction: (action) {
                 switch (action) {
                   case _MemberAction.viewTasks:
@@ -356,11 +358,13 @@ class _MemberCard extends StatelessWidget {
   const _MemberCard({
     required this.member,
     required this.workload,
+    required this.canManage,
     required this.onAction,
   });
 
   final Member member;
   final String workload;
+  final bool canManage;
   final ValueChanged<_MemberAction> onAction;
 
   @override
@@ -463,14 +467,16 @@ class _MemberCard extends StatelessWidget {
                 value: _MemberAction.viewTasks,
                 child: Text('View tasks'),
               ),
-              PopupMenuItem(
-                value: _MemberAction.changeRole,
-                child: Text(isAdmin ? 'Make member' : 'Make admin'),
-              ),
-              const PopupMenuItem(
-                value: _MemberAction.remove,
-                child: Text('Remove from team'),
-              ),
+              if (canManage) ...[
+                PopupMenuItem(
+                  value: _MemberAction.changeRole,
+                  child: Text(isAdmin ? 'Make member' : 'Make admin'),
+                ),
+                const PopupMenuItem(
+                  value: _MemberAction.remove,
+                  child: Text('Remove from team'),
+                ),
+              ],
             ],
           ),
         ],

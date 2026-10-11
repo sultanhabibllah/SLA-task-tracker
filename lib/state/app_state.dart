@@ -25,6 +25,9 @@ class AppState extends ChangeNotifier {
     return id == null ? null : memberById(id);
   }
 
+  // Only admins may add, remove or change the role of team members.
+  bool get isAdmin => currentUser?.role == MemberRole.admin;
+
   // Reads saved data. On first launch the starter data is used and saved, so
   // its due dates stay fixed from then on.
   Future<void> load() async {

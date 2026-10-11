@@ -178,21 +178,46 @@ void main() {
     expect(find.text('Overdue'), findsOneWidget);
   });
 
-  testWidgets('the only admin cannot be removed', (tester) async {
+  testWidgets('a member who is not an admin can only browse the team', (
+    tester,
+  ) async {
     final appState = await pumpScreen(tester);
 
-    // Sign in as a member, leave Priya as the only admin with no tasks.
+    // Marcus Lee (m3) is a member, not an admin.
     await appState.signIn('m3');
-    await appState.updateMember(
-      appState.memberById('m1')!.copyWith(role: MemberRole.member),
-    );
-    await appState.deleteTask('t1');
     await tester.pumpAndSettle();
 
-    await openMenu(tester, 'Priya Sharma', 'Remove from team');
+    expect(find.byTooltip('Add member'), findsNothing);
+    expect(find.byTooltip('Search members'), findsOneWidget);
 
-    expect(find.text('The team needs at least one admin.'), findsOneWidget);
-    expect(appState.memberById('m2'), isNotNull);
+    await tester.tap(find.byTooltip('Options for David Liu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('View tasks'), findsOneWidget);
+    expect(find.text('Make admin'), findsNothing);
+    expect(find.text('Remove from team'), findsNothing);
+
+    await tester.tap(find.text('View tasks'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('David Liu\'s tasks'), findsOneWidget);
+  });
+
+  testWidgets('the controls appear as soon as a member is made admin', (
+    tester,
+  ) async {
+    final appState = await pumpScreen(tester);
+    await appState.signIn('m3');
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Add member'), findsNothing);
+
+    await appState.updateMember(
+      appState.memberById('m3')!.copyWith(role: MemberRole.admin),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Add member'), findsOneWidget);
   });
 
   testWidgets('tapping a task in the list opens it for editing', (

@@ -159,6 +159,18 @@ void main() {
     );
   });
 
+  test('only a signed-in admin counts as an admin', () async {
+    final state = await loadState();
+
+    expect(state.isAdmin, isFalse);
+
+    await state.signIn('m1');
+    expect(state.isAdmin, isTrue);
+
+    await state.signIn('m3');
+    expect(state.isAdmin, isFalse);
+  });
+
   test('signing in as an unknown member does nothing', () async {
     final state = await loadState();
     await state.signIn('nobody');
