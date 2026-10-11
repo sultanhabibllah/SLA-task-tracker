@@ -1,49 +1,9 @@
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../../core/theme/app_colors.dart';
-
-enum TaskSlaStatus {
-  onTrack,
-  atRisk,
-  overdue,
-  completed,
-}
-
-class SprintlyTask {
-  final String title;
-  final String project;
-  final String assignee;
-  final String initials;
-  final String priority;
-  final DateTime deadline;
-  final bool completed;
-
-  const SprintlyTask({
-    required this.title,
-    required this.project,
-    required this.assignee,
-    required this.initials,
-    required this.priority,
-    required this.deadline,
-    this.completed = false,
-  });
-
-  TaskSlaStatus get slaStatus {
-    if (completed) return TaskSlaStatus.completed;
-
-    final timeLeft = deadline.difference(DateTime.now());
-
-    if (timeLeft.isNegative) {
-      return TaskSlaStatus.overdue;
-    }
-
-    if (timeLeft <= const Duration(hours: 48)) {
-      return TaskSlaStatus.atRisk;
-    }
-
-    return TaskSlaStatus.onTrack;
-  }
-}
+import '../../models/task.dart';
+import '../../state/app_state.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -53,61 +13,16 @@ class TaskListScreen extends StatefulWidget {
 }
 
 class _TaskListScreenState extends State<TaskListScreen> {
-  final TextEditingController _searchController =
-      TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
-  String selectedFilter = 'All';
+  String _selectedFilter = 'All';
 
-  final List<String> filters = [
+  static const List<String> _filters = [
     'All',
     'On Track',
     'At Risk',
     'Overdue',
     'Completed',
-  ];
-
-  late final List<SprintlyTask> tasks = [
-    SprintlyTask(
-      title: 'Design Login Screen',
-      project: 'Mobile App',
-      assignee: 'Priya Sharma',
-      initials: 'PS',
-      priority: 'High',
-      deadline: DateTime.now().add(const Duration(days: 5)),
-    ),
-    SprintlyTask(
-      title: 'Implement Local Storage',
-      project: 'Mobile App',
-      assignee: 'James Wilson',
-      initials: 'JW',
-      priority: 'High',
-      deadline: DateTime.now().add(const Duration(hours: 24)),
-    ),
-    SprintlyTask(
-      title: 'Write API Documentation',
-      project: 'Backend',
-      assignee: 'Alex Carter',
-      initials: 'AC',
-      priority: 'Medium',
-      deadline: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    SprintlyTask(
-      title: 'Update Design System',
-      project: 'UI/UX',
-      assignee: 'Priya Sharma',
-      initials: 'PS',
-      priority: 'Low',
-      deadline: DateTime.now().subtract(const Duration(days: 1)),
-      completed: true,
-    ),
-    SprintlyTask(
-      title: 'Test Authentication Flow',
-      project: 'Mobile App',
-      assignee: 'James Wilson',
-      initials: 'JW',
-      priority: 'Medium',
-      deadline: DateTime.now().add(const Duration(days: 7)),
-    ),
   ];
 
   @override
@@ -116,73 +31,92 @@ class _TaskListScreenState extends State<TaskListScreen> {
     super.dispose();
   }
 
-  String getStatusLabel(TaskSlaStatus status) {
-    switch (status) {
-      case TaskSlaStatus.onTrack:
+  String _slaLabel(Task task, AppState state) {
+    switch (state.slaOf(task).name) {
+      case 'onTrack':
         return 'On Track';
-      case TaskSlaStatus.atRisk:
+      case 'atRisk':
         return 'At Risk';
-      case TaskSlaStatus.overdue:
+      case 'overdue':
         return 'Overdue';
-      case TaskSlaStatus.completed:
+      case 'completed':
         return 'Completed';
+      default:
+        return 'On Track';
     }
   }
 
-  Color getStatusColor(TaskSlaStatus status) {
+  Color _slaColor(String status) {
     switch (status) {
-      case TaskSlaStatus.onTrack:
+      case 'On Track':
         return AppColors.onTrack;
-      case TaskSlaStatus.atRisk:
+      case 'At Risk':
         return AppColors.atRisk;
-      case TaskSlaStatus.overdue:
+      case 'Overdue':
         return AppColors.overdue;
-      case TaskSlaStatus.completed:
+      case 'Completed':
         return AppColors.completed;
+      default:
+        return AppColors.textSecondary;
     }
   }
 
-  Color getStatusBackground(TaskSlaStatus status) {
+  Color _slaBackground(String status) {
     switch (status) {
-      case TaskSlaStatus.onTrack:
+      case 'On Track':
         return AppColors.softGreen;
-      case TaskSlaStatus.atRisk:
+      case 'At Risk':
         return AppColors.softYellow;
-      case TaskSlaStatus.overdue:
+      case 'Overdue':
         return AppColors.softRed;
-      case TaskSlaStatus.completed:
+      case 'Completed':
         return AppColors.softBlue;
+      default:
+        return AppColors.background;
     }
   }
 
-  List<SprintlyTask> get filteredTasks {
-    final search = _searchController.text.toLowerCase().trim();
-
-    return tasks.where((task) {
-      final matchesSearch =
-          task.title.toLowerCase().contains(search) ||
-          task.project.toLowerCase().contains(search) ||
-          task.assignee.toLowerCase().contains(search);
-
-      final matchesFilter =
-          selectedFilter == 'All' ||
-          getStatusLabel(task.slaStatus) == selectedFilter;
-
-      return matchesSearch && matchesFilter;
-    }).toList();
-  }
-
-  String formatDate(DateTime date) {
+  String _formatDate(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
 
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  Widget buildTaskCard(SprintlyTask task) {
-    final status = task.slaStatus;
+  List<Task> _filteredTasks(AppState state) {
+    final query = _searchController.text.trim().toLowerCase();
+
+    return state.tasks.where((task) {
+      final member = state.memberById(task.assigneeId);
+      final assignee = member?.name ?? '';
+
+      final matchesSearch =
+          task.title.toLowerCase().contains(query) ||
+          task.project.toLowerCase().contains(query) ||
+          assignee.toLowerCase().contains(query);
+
+      final matchesStatus =
+          _selectedFilter == 'All' || _slaLabel(task, state) == _selectedFilter;
+
+      return matchesSearch && matchesStatus;
+    }).toList();
+  }
+
+  Widget _buildTaskCard(Task task, AppState state) {
+    final member = state.memberById(task.assigneeId);
+    final status = _slaLabel(task, state);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -208,31 +142,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              PopupMenuButton<String>(
-                padding: EdgeInsets.zero,
-                icon: const Icon(
-                  Icons.more_horiz,
-                  color: AppColors.textSecondary,
-                ),
-                onSelected: (value) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('$value: ${task.title}'),
-                    ),
-                  );
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'View task',
-                    child: Text('View task'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'Edit task',
-                    child: Text('Edit task'),
-                  ),
-                ],
-              ),
+              const SizedBox(width: 8),
+              Icon(Icons.more_horiz, color: AppColors.textSecondary),
             ],
           ),
 
@@ -248,42 +159,43 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
           const SizedBox(height: 16),
 
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+                  horizontal: 11,
+                  vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: getStatusBackground(status),
+                  color: _slaBackground(status),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  getStatusLabel(status),
+                  status,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: getStatusColor(status),
+                    color: _slaColor(status),
                   ),
                 ),
               ),
 
-              const SizedBox(width: 8),
-
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+                  horizontal: 11,
+                  vertical: 7,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${task.priority} Priority',
+                  '${task.priority.label} Priority',
                   style: const TextStyle(
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -293,23 +205,20 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
           const SizedBox(height: 18),
 
-          const Divider(
-            color: AppColors.border,
-            height: 1,
-          ),
+          const Divider(height: 1, color: AppColors.border),
 
           const SizedBox(height: 14),
 
           Row(
             children: [
               CircleAvatar(
-                radius: 15,
+                radius: 16,
                 backgroundColor: AppColors.midnight,
                 child: Text(
-                  task.initials,
+                  member?.initials ?? '?',
                   style: const TextStyle(
                     fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.bold,
                     color: AppColors.lime,
                   ),
                 ),
@@ -319,7 +228,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
               Expanded(
                 child: Text(
-                  task.assignee,
+                  member?.name ?? 'Unassigned',
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
@@ -337,7 +246,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
               const SizedBox(width: 6),
 
               Text(
-                formatDate(task.deadline),
+                _formatDate(task.dueDate),
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
@@ -352,32 +261,16 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final visibleTasks = filteredTasks;
+    final state = context.watch<AppState>();
+    final visibleTasks = _filteredTasks(state);
 
     return Scaffold(
       backgroundColor: AppColors.background,
 
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.midnight,
-        foregroundColor: AppColors.lime,
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Create Task screen coming next'),
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
-
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 22,
-            vertical: 24,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
           children: [
-            // Branding
             Row(
               children: [
                 Container(
@@ -393,7 +286,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
                     size: 22,
                   ),
                 ),
+
                 const SizedBox(width: 10),
+
                 const Text(
                   'Sprintly',
                   style: TextStyle(
@@ -419,7 +314,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
             const SizedBox(height: 6),
 
             Text(
-              '${tasks.length} tasks in your workspace',
+              '${state.tasks.length} tasks in your workspace',
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
@@ -428,7 +323,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
             const SizedBox(height: 28),
 
-            // Search field
             TextField(
               controller: _searchController,
               onChanged: (_) => setState(() {}),
@@ -440,12 +334,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
             const SizedBox(height: 20),
 
-            // SLA filters
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: filters.map((filter) {
-                  final selected = selectedFilter == filter;
+                children: _filters.map((filter) {
+                  final selected = _selectedFilter == filter;
 
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
@@ -456,19 +349,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
                       backgroundColor: AppColors.white,
                       selectedColor: AppColors.lime,
                       side: BorderSide(
-                        color: selected
-                            ? AppColors.lime
-                            : AppColors.border,
-                      ),
-                      labelStyle: TextStyle(
-                        color: AppColors.midnight,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                        color: selected ? AppColors.lime : AppColors.border,
                       ),
                       onSelected: (_) {
                         setState(() {
-                          selectedFilter = filter;
+                          _selectedFilter = filter;
                         });
                       },
                     ),
@@ -490,6 +375,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                     color: AppColors.textPrimary,
                   ),
                 ),
+
                 Text(
                   '${visibleTasks.length} results',
                   style: const TextStyle(
@@ -502,10 +388,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
             const SizedBox(height: 16),
 
-            // Task cards or empty state
             if (visibleTasks.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 64),
+                padding: const EdgeInsets.symmetric(vertical: 60),
                 child: Column(
                   children: [
                     const Icon(
@@ -513,7 +398,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
                       size: 48,
                       color: AppColors.textSecondary,
                     ),
+
                     const SizedBox(height: 16),
+
                     const Text(
                       'No tasks found',
                       style: TextStyle(
@@ -522,19 +409,21 @@ class _TaskListScreenState extends State<TaskListScreen> {
                         color: AppColors.textPrimary,
                       ),
                     ),
+
                     const SizedBox(height: 8),
+
                     const Text(
                       'Try another search or filter.',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
+                      style: TextStyle(color: AppColors.textSecondary),
                     ),
+
                     const SizedBox(height: 16),
+
                     TextButton(
                       onPressed: () {
                         _searchController.clear();
                         setState(() {
-                          selectedFilter = 'All';
+                          _selectedFilter = 'All';
                         });
                       },
                       child: const Text('Clear filters'),
@@ -543,9 +432,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 ),
               )
             else
-              ...visibleTasks.map(buildTaskCard),
+              ...visibleTasks.map((task) => _buildTaskCard(task, state)),
 
-            const SizedBox(height: 70),
+            const SizedBox(height: 28),
           ],
         ),
       ),
