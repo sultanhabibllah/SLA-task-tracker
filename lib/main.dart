@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'core/theme/app_theme.dart';
 import 'screens/auth/sign_in_screen.dart';
 import 'screens/shell/app_shell.dart';
@@ -10,7 +11,7 @@ import 'state/app_state.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load saved data before the first frame so the app opens on the right screen.
+  // Load saved application data before launching.
   final appState = AppState(StorageService());
   await appState.load();
 
@@ -18,7 +19,10 @@ Future<void> main() async {
 }
 
 class SprintlyApp extends StatelessWidget {
-  const SprintlyApp({super.key, required this.appState});
+  const SprintlyApp({
+    super.key,
+    required this.appState,
+  });
 
   final AppState appState;
 
@@ -36,10 +40,8 @@ class SprintlyApp extends StatelessWidget {
   }
 }
 
-// Shows the sign-in screen until a team member is signed in, then the app.
-// Signing out from a tab swaps back to sign-in automatically. A screen opened
-// with Navigator.push sits above this gate, so it must pop back to the first
-// route before calling signOut().
+// Display Sign In until a team member is selected.
+// Once signed in, display the main application shell.
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 
@@ -49,6 +51,8 @@ class _AuthGate extends StatelessWidget {
       (state) => state.currentUser != null,
     );
 
-    return signedIn ? const AppShell() : const SignInScreen();
+    return signedIn
+        ? const AppShell()
+        : const SignInScreen();
   }
 }
