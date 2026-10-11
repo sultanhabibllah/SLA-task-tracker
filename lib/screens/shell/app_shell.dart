@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../calendar/calendar_screen.dart';
 import '../home/dashboard_screen.dart';
 import '../profile/profile_screen.dart';
 import '../team/team_members_screen.dart';
@@ -19,7 +20,7 @@ class _AppShellState extends State<AppShell> {
   static const List<Widget> _tabs = [
     DashboardScreen(),
     TaskListScreen(),
-    _ComingSoonTab(title: 'Calendar', icon: Icons.calendar_today_outlined),
+    CalendarScreen(),
     TeamMembersScreen(),
     ProfileScreen(),
   ];
@@ -65,39 +66,6 @@ class _AppShellState extends State<AppShell> {
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ComingSoonTab extends StatelessWidget {
-  const _ComingSoonTab({required this.title, required this.icon});
-
-  final String title;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 48, color: AppColors.textSecondary),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'This screen is not built yet.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
         ],
       ),

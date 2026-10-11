@@ -11,6 +11,8 @@ import '../../state/app_state.dart';
 import '../../widgets/member_avatar.dart';
 import '../../widgets/sprintly_header.dart';
 import '../../widgets/status_chip.dart';
+import '../alerts/alerts_screen.dart';
+import '../statistics/statistics_screen.dart';
 import '../tasks/task_detail_screen.dart';
 
 // which tasks the SLA Health card looks at
@@ -36,6 +38,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
+  }
+
+  // pushes a full screen such as Alerts or Statistics on top of the shell
+  void _open(BuildContext context, Widget screen) {
+    debugPrint('[Dashboard] opening ${screen.runtimeType}');
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 
   // "This Week" covers tasks due within the next 7 days, plus anything that
@@ -89,30 +97,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: FittedBox(fit: BoxFit.scaleDown, child: SprintlyLogo()),
           ),
         ),
+        IconButton(
+          key: const ValueKey('dashboard-stats'),
+          tooltip: 'Task statistics',
+          onPressed: () => _open(context, const StatisticsScreen()),
+          icon: const Icon(Icons.insert_chart_outlined_rounded, size: 26),
+          color: AppColors.textPrimary,
+        ),
         Stack(
           clipBehavior: Clip.none,
           children: [
             IconButton(
               key: const ValueKey('dashboard-bell'),
-              tooltip: 'Notifications',
-              onPressed: () {
-                final message = needsAttention == 0
-                    ? 'Nothing needs your attention right now.'
-                    : '$needsAttention '
-                          '${needsAttention == 1 ? 'task needs' : 'tasks need'}'
-                          ' attention (at risk or overdue).';
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(
-                      backgroundColor: AppColors.midnight,
-                      content: Text(
-                        message,
-                        style: const TextStyle(color: AppColors.white),
-                      ),
-                    ),
-                  );
-              },
+              tooltip: 'Alerts',
+              // opens the Alerts screen with everything at risk or overdue
+              onPressed: () => _open(context, const AlertsScreen()),
               icon: const Icon(Icons.notifications_none_rounded, size: 28),
               color: AppColors.textPrimary,
             ),
