@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/sla/sla_status.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/member.dart';
@@ -8,6 +9,7 @@ import '../../widgets/member_avatar.dart';
 import '../../widgets/sprintly_header.dart';
 import '../../widgets/status_chip.dart';
 import 'add_member_sheet.dart';
+import 'member_profile_screen.dart';
 import 'member_tasks_sheet.dart';
 
 enum _MemberFilter { all, admins, members }
@@ -91,6 +93,14 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
     _showMessage('${added.name} was added to the team.');
   }
 
+  void _openProfile(Member member) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MemberProfileScreen(memberId: member.id),
+      ),
+    );
+  }
+
   void _openTasks(Member member) {
     showModalBottomSheet<void>(
       context: context,
@@ -105,10 +115,9 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
   bool _isLastAdmin(Member member) {
     if (member.role != MemberRole.admin) return false;
 
-    final admins = context
-        .read<AppState>()
-        .members
-        .where((m) => m.role == MemberRole.admin);
+    final admins = context.read<AppState>().members.where(
+      (m) => m.role == MemberRole.admin,
+    );
     return admins.length == 1;
   }
 
@@ -155,9 +164,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.overdue,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AppColors.overdue),
               child: const Text('Remove'),
             ),
           ],
@@ -193,15 +200,17 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
     // Members can browse the team; only admins get the controls that change it.
     final canManage = appState.isAdmin;
 
-    final adminCount =
-        members.where((member) => member.role == MemberRole.admin).length;
+    final adminCount = members
+        .where((member) => member.role == MemberRole.admin)
+        .length;
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       children: [
         SprintlyHeader(
           title: 'Team Members',
-          subtitle: 'Manage your team, assign tasks and collaborate on projects.',
+          subtitle:
+              'Manage your team, assign tasks and collaborate on projects.',
           actions: [
             IconButton(
               onPressed: _toggleSearch,
@@ -304,6 +313,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
               member: member,
               workload: _workloadSummary(appState, member),
               canManage: canManage,
+              onTap: () => _openProfile(member),
               onAction: (action) {
                 switch (action) {
                   case _MemberAction.viewTasks:
@@ -359,127 +369,136 @@ class _MemberCard extends StatelessWidget {
     required this.member,
     required this.workload,
     required this.canManage,
+    required this.onTap,
     required this.onAction,
   });
 
   final Member member;
   final String workload;
   final bool canManage;
+  final VoidCallback onTap;
   final ValueChanged<_MemberAction> onAction;
 
   @override
   Widget build(BuildContext context) {
     final isAdmin = member.role == MemberRole.admin;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 2, 14),
-      decoration: BoxDecoration(
-        color: AppColors.white,
+    return Material(
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          MemberAvatar(member: member, radius: 26),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 14, 2, 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              MemberAvatar(member: member, radius: 26),
 
-          const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        member.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            member.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        PresenceChip(presence: member.presence),
+                      ],
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      isAdmin ? '${member.jobTitle} · Admin' : member.jobTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    PresenceChip(presence: member.presence),
-                  ],
-                ),
 
-                const SizedBox(height: 4),
+                    const SizedBox(height: 6),
 
-                Text(
-                  isAdmin ? '${member.jobTitle} · Admin' : member.jobTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-
-                const SizedBox(height: 6),
-
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.mail_outline,
-                      size: 15,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        member.email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.mail_outline,
+                          size: 15,
                           color: AppColors.textSecondary,
                         ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            member.email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Text(
+                      workload,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 6),
-
-                Text(
-                  workload,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          PopupMenuButton<_MemberAction>(
-            tooltip: 'Options for ${member.name}',
-            icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
-            onSelected: onAction,
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: _MemberAction.viewTasks,
-                child: Text('View tasks'),
               ),
-              if (canManage) ...[
-                PopupMenuItem(
-                  value: _MemberAction.changeRole,
-                  child: Text(isAdmin ? 'Make member' : 'Make admin'),
-                ),
-                const PopupMenuItem(
-                  value: _MemberAction.remove,
-                  child: Text('Remove from team'),
-                ),
-              ],
+
+              PopupMenuButton<_MemberAction>(
+                tooltip: 'Options for ${member.name}',
+                icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
+                onSelected: onAction,
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: _MemberAction.viewTasks,
+                    child: Text('View tasks'),
+                  ),
+                  if (canManage) ...[
+                    PopupMenuItem(
+                      value: _MemberAction.changeRole,
+                      child: Text(isAdmin ? 'Make member' : 'Make admin'),
+                    ),
+                    const PopupMenuItem(
+                      value: _MemberAction.remove,
+                      child: Text('Remove from team'),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
