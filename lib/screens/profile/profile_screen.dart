@@ -96,22 +96,25 @@ class ProfileScreen extends StatelessWidget {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('How SLA status works'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _slaRule(SlaStatus.completed, 'The task is marked as Done.'),
-              _slaRule(
-                SlaStatus.overdue,
-                'The due date has passed and the task is not done.',
-              ),
-              _slaRule(
-                SlaStatus.atRisk,
-                'Due within ${atRiskWindow.inHours} hours, or '
-                '${highPriorityAtRiskWindow.inHours} hours for High priority tasks.',
-              ),
-              _slaRule(SlaStatus.onTrack, 'Every other open task.'),
-            ],
+          // Scrolls when the rules do not fit, e.g. with large text.
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _slaRule(SlaStatus.completed, 'The task is marked as Done.'),
+                _slaRule(
+                  SlaStatus.overdue,
+                  'The due date has passed and the task is not done.',
+                ),
+                _slaRule(
+                  SlaStatus.atRisk,
+                  'Due within ${atRiskWindow.inHours} hours, or '
+                  '${highPriorityAtRiskWindow.inHours} hours for High priority tasks.',
+                ),
+                _slaRule(SlaStatus.onTrack, 'Every other open task.'),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -160,9 +163,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.overdue,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AppColors.overdue),
               child: const Text('Sign Out'),
             ),
           ],
@@ -374,9 +375,7 @@ class ProfileScreen extends StatelessWidget {
                 Row(
                   children: [
                     for (final status in SlaStatus.values)
-                      Expanded(
-                        child: _slaCount(status, slaCounts[status]!),
-                      ),
+                      Expanded(child: _slaCount(status, slaCounts[status]!)),
                   ],
                 ),
               ],
@@ -517,10 +516,7 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           status.label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ],
     );

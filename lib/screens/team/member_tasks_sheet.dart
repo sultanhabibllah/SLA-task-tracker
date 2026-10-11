@@ -75,8 +75,11 @@ class MemberTasksSheet extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        Navigator.push(
-          context,
+        // Close this sheet first, otherwise the "Task updated." message from
+        // Edit Task would be hidden behind it.
+        final navigator = Navigator.of(context);
+        navigator.pop();
+        navigator.push(
           MaterialPageRoute(builder: (_) => EditTaskScreen(task: task)),
         );
       },

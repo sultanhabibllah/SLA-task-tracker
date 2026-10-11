@@ -16,8 +16,11 @@ void main() {
 
   // Opens the Profile screen signed in as Priya Sharma (m2), on a tall
   // screen so every row is laid out.
-  Future<AppState> pumpScreen(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(430, 2400);
+  Future<AppState> pumpScreen(
+    WidgetTester tester, {
+    Size screenSize = const Size(430, 2400),
+  }) async {
+    tester.view.physicalSize = screenSize;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -173,6 +176,24 @@ void main() {
       find.text('The due date has passed and the task is not done.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('the SLA rules fit on a small screen by scrolling', (
+    tester,
+  ) async {
+    await pumpScreen(tester, screenSize: const Size(430, 420));
+
+    await tester.scrollUntilVisible(
+      find.text('How SLA status works'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('How SLA status works'));
+    await tester.pumpAndSettle();
+
+    // A layout overflow would fail the test here.
+    expect(tester.takeException(), isNull);
+    expect(find.text('Got it'), findsOneWidget);
   });
 
   testWidgets('sign out asks first, then signs the member out', (tester) async {

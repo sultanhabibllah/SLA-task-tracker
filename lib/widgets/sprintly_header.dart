@@ -68,8 +68,16 @@ class SprintlyHeader extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back_ios_new, size: 20),
                 color: AppColors.textPrimary,
               ),
-            const SprintlyLogo(),
-            const Spacer(),
+            // The logo shrinks instead of overflowing on narrow screens.
+            const Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: SprintlyLogo(),
+                ),
+              ),
+            ),
             ...actions,
           ],
         ),

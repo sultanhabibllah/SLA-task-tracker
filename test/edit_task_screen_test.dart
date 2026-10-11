@@ -16,8 +16,12 @@ void main() {
 
   // Opens Edit Task for a starter task from a host screen, the way the app
   // pushes it, on a tall screen so the whole form is laid out.
-  Future<AppState> pumpScreen(WidgetTester tester, String taskId) async {
-    tester.view.physicalSize = const Size(430, 2400);
+  Future<AppState> pumpScreen(
+    WidgetTester tester,
+    String taskId, {
+    Size screenSize = const Size(430, 2400),
+  }) async {
+    tester.view.physicalSize = screenSize;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -107,6 +111,49 @@ void main() {
     );
     expect(find.text('Edit Task'), findsOneWidget);
     expect(appState.taskById('t1')!.title, 'Design Login Screen');
+  });
+
+  testWidgets('validation still runs for fields scrolled off screen', (
+    tester,
+  ) async {
+    // A phone-sized screen, where the title is out of view at the bottom.
+    final appState = await pumpScreen(
+      tester,
+      't1',
+      screenSize: const Size(375, 667),
+    );
+
+    await tester.enterText(find.byType(TextFormField).at(0), '');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Save Changes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Save Changes').hitTestable(), findsOneWidget);
+    await save(tester);
+
+    expect(find.text('Edit Task'), findsOneWidget);
+    expect(appState.taskById('t1')!.title, 'Design Login Screen');
+
+    await tester.ensureVisible(find.byType(TextFormField).at(0));
+    await tester.pumpAndSettle();
+    expect(find.text('Please enter a task title'), findsOneWidget);
+  });
+
+  testWidgets('a due date outside the usual range can still be changed', (
+    tester,
+  ) async {
+    final appState = await pumpScreen(tester, 't1');
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await appState.updateTask(
+      appState.taskById('t1')!.copyWith(dueDate: DateTime(2019, 5, 1)),
+    );
+    await tester.tap(find.text('Open task'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(TextFormField).at(2));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DatePickerDialog), findsOneWidget);
   });
 
   testWidgets('changes are saved and the screen closes', (tester) async {

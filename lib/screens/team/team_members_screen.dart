@@ -82,6 +82,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
     final added = await showModalBottomSheet<Member>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.white,
       builder: (_) => const AddMemberSheet(),
     );
@@ -94,6 +95,7 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.white,
       builder: (_) => MemberTasksSheet(member: member),
     );
@@ -169,8 +171,8 @@ class _TeamMembersScreenState extends State<TeamMembersScreen> {
 
     if (confirmed != true) return;
 
-    await appState.removeMember(member.id);
-    if (!mounted) return;
+    final removed = await appState.removeMember(member.id);
+    if (!removed || !mounted) return;
     _showMessage('${member.name} was removed from the team.');
   }
 
