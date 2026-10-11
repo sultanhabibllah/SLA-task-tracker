@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/auth/sign_in_screen.dart';
+import 'screens/tasks/task_list_screen.dart';
 
 void main() {
   runApp(const SprintlyApp());
@@ -16,7 +16,7 @@ class SprintlyApp extends StatelessWidget {
       title: 'Sprintly',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const SignInScreen(),
+      home: const TaskListScreen(),
     );
   }
 }
